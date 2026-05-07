@@ -11,7 +11,6 @@
     "davidvkimball/obsidian-bases-cms",
     "davidvkimball/obsidian-oxygen-settings",
     "davidvkimball/obsidian-seo",
-    "davidvkimball/obsidian-disable-tabs",
     "davidvkimball/obsidian-astro-composer"
   ],
   "pluginSubListFrozenVersion": [
@@ -57,10 +56,6 @@
     },
     {
       "repo": "davidvkimball/obsidian-seo",
-      "version": "latest"
-    },
-    {
-      "repo": "davidvkimball/obsidian-disable-tabs",
       "version": "latest"
     },
     {
