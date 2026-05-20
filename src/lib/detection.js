@@ -141,6 +141,27 @@ async function detectAstroRoutes(projectRoot) {
   return routes;
 }
 
+/**
+ * Read a dynamic-route file and look for the first `getCollection('X')` call
+ * the user wrote. That's the most reliable signal of which collection the
+ * route serves — folder names are just convention. Returns the collection
+ * name, or null if no call is found or the file can't be read.
+ *
+ * Strips line + block comments first so commented-out calls don't false-match.
+ */
+async function extractCollectionFromRouteFile(filePath) {
+  try {
+    const source = await fs.readFile(filePath, 'utf-8');
+    const stripped = source
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^[ \t]*\/\/.*$/gm, '');
+    const match = stripped.match(/getCollection\s*\(\s*(['"`])([\w-]+)\1/);
+    return match ? match[2] : null;
+  } catch {
+    return null;
+  }
+}
+
 async function scanPagesDir(dir, pagesRoot, collections, routes) {
   const items = await fs.readdir(dir);
 
@@ -157,10 +178,25 @@ async function scanPagesDir(dir, pagesRoot, collections, routes) {
       const urlPrefix = relativeDirPath === '' ? '/' : `/${relativeDirPath.replace(/\\/g, '/')}/`;
       const relativeFilePath = path.relative(pagesRoot, fullPath).replace(/\\/g, '/');
 
-      const dirName = path.basename(dir);
-      const matchedCollection = dirName === path.basename(pagesRoot)
-        ? null
-        : collections.find((c) => c.toLowerCase() === dirName.toLowerCase());
+      // 1. Primary signal: parse the route file for its getCollection() call.
+      //    This is what the user's own code says the route is for, and it
+      //    supports any URL pattern (flat /[slug].astro for `posts`, etc.).
+      let matchedCollection = null;
+      const declaredCollection = await extractCollectionFromRouteFile(fullPath);
+      if (declaredCollection) {
+        matchedCollection = collections.find(
+          (c) => c.toLowerCase() === declaredCollection.toLowerCase()
+        ) || null;
+      }
+
+      // 2. Fallback: folder-name convention (existing behavior). Kept so
+      //    routes that don't explicitly call getCollection() still resolve.
+      if (!matchedCollection) {
+        const dirName = path.basename(dir);
+        matchedCollection = dirName === path.basename(pagesRoot)
+          ? null
+          : collections.find((c) => c.toLowerCase() === dirName.toLowerCase()) || null;
+      }
 
       if (matchedCollection) {
         routes.push({
@@ -169,6 +205,9 @@ async function scanPagesDir(dir, pagesRoot, collections, routes) {
           sourceFile: `src/pages/${relativeFilePath}`,
         });
       } else if (relativeDirPath === '') {
+        // 3. Legacy fallback: root-level routes with no other signal map to a
+        //    collection literally named "pages" if one exists. Preserved for
+        //    back-compat with projects scaffolded before getCollection parsing.
         const routedCollections = routes.map((r) => r.collection);
         const unrouted = collections.filter((c) => !routedCollections.includes(c));
         const pagesCollection = unrouted.find((c) => c.toLowerCase() === 'pages');
