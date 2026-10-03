@@ -62,5 +62,7 @@ This package also bundles an [MCP server](https://modelcontextprotocol.io) (`vau
 
 > [!NOTE]
 > To see Vault CMS combined with an Astro site specifically designed with it in mind, check out the [Astro Modular](https://github.com/davidvkimball/astro-modular) theme.
+>
+> Prefer a standalone app to Obsidian? [Zeku](https://zeku.dev), from the same developer, opens your Astro project directly and leaves your Vault CMS setup untouched, so you can use either one or both.
 
 ![Vault CMS Showcase.](https://github.com/user-attachments/assets/0d1ea89e-9d6b-40b1-944d-cfe6143e222e)
